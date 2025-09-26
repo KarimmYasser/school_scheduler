@@ -2,11 +2,16 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sqlite3
 import json
+from ..core import get_localization, t
 
 class TimetableApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("School Timetable Generator")
+        
+        # Initialize localization
+        self.localization = get_localization()
+        
+        self.title(t("app_title"))
         self.geometry("1200x800")
         
         # Database path
@@ -15,6 +20,10 @@ class TimetableApp(tk.Tk):
         # --- Style ---
         self.style = ttk.Style(self)
         self.style.theme_use('clam') # 'clam', 'alt', 'default', 'classic'
+        
+        # Get localized font
+        font_family = self.localization.get_font_family()
+        
         self.style.configure("TButton", padding=6, relief="flat", background="#cceeff", borderwidth=0)
         self.style.map("TButton",
             foreground=[('pressed', 'red'), ('active', 'blue')],
@@ -22,13 +31,18 @@ class TimetableApp(tk.Tk):
         )
         self.style.configure("TFrame", background="#f0f0f0")
         
-        # Additional styles for dialog elements
-        self.style.configure("Large.TRadiobutton", font=('Helvetica', 10, 'bold'))
-        self.style.configure("Custom.TRadiobutton", font=('Helvetica', 10))
-        self.style.configure("Bold.TRadiobutton", font=('Helvetica', 10, 'bold'))
-        self.style.configure("Header.TLabel", background="#007acc", foreground="white", padding=10, font=('Helvetica', 12, 'bold'))
-        self.style.configure("Slot.TButton", font=('Helvetica', 9), width=15)
-        self.style.configure("Time.TLabel", background="#f0f0f0", font=('Helvetica', 10, 'bold'))
+        # Additional styles for dialog elements with localized font
+        self.style.configure("Large.TRadiobutton", font=(font_family, 10, 'bold'))
+        self.style.configure("Custom.TRadiobutton", font=(font_family, 10))
+        self.style.configure("Bold.TRadiobutton", font=(font_family, 10, 'bold'))
+        self.style.configure("Header.TLabel", background="#007acc", foreground="white", padding=10, font=(font_family, 12, 'bold'))
+        self.style.configure("Slot.TButton", font=(font_family, 9), width=15)
+        self.style.configure("Time.TLabel", background="#f0f0f0", font=(font_family, 10, 'bold'))
+        
+        # Configure for RTL support if needed
+        if self.localization.is_rtl():
+            self.style.configure("RTL.TLabel", anchor="e")
+            self.style.configure("RTL.TButton", anchor="e")
 
         # --- Menu Bar ---
         self.create_menu()
@@ -41,26 +55,31 @@ class TimetableApp(tk.Tk):
         controls_frame = ttk.Frame(main_frame, padding="10")
         controls_frame.pack(fill=tk.X)
         
-        ttk.Label(controls_frame, text="View:", font=('Helvetica', 11, 'bold')).pack(side=tk.LEFT, padx=5)
+        # Adjust layout based on RTL
+        view_side = tk.RIGHT if self.localization.is_rtl() else tk.LEFT
+        button_side = tk.LEFT if self.localization.is_rtl() else tk.RIGHT
+        
+        font_family = self.localization.get_font_family()
+        ttk.Label(controls_frame, text=t("view_label"), font=(font_family, 11, 'bold')).pack(side=view_side, padx=5)
         
         self.view_var = tk.StringVar(value="Classes")
-        class_view_btn = ttk.Radiobutton(controls_frame, text="Classes", variable=self.view_var, value="Classes", command=self.on_view_change)
-        teacher_view_btn = ttk.Radiobutton(controls_frame, text="Teachers", variable=self.view_var, value="Teachers", command=self.on_view_change)
-        class_view_btn.pack(side=tk.LEFT, padx=5)
-        teacher_view_btn.pack(side=tk.LEFT, padx=5)
+        class_view_btn = ttk.Radiobutton(controls_frame, text=t("classes"), variable=self.view_var, value="Classes", command=self.on_view_change)
+        teacher_view_btn = ttk.Radiobutton(controls_frame, text=t("teachers"), variable=self.view_var, value="Teachers", command=self.on_view_change)
+        class_view_btn.pack(side=view_side, padx=5)
+        teacher_view_btn.pack(side=view_side, padx=5)
         
         self.item_selector = ttk.Combobox(controls_frame, state="readonly", width=20)
-        self.item_selector.pack(side=tk.LEFT, padx=20)
+        self.item_selector.pack(side=view_side, padx=20)
         self.item_selector.bind("<<ComboboxSelected>>", self.draw_timetable)
 
-        generate_btn = ttk.Button(controls_frame, text="Generate Schedule", command=self.generate_schedule)
-        generate_btn.pack(side=tk.RIGHT, padx=5)
+        generate_btn = ttk.Button(controls_frame, text=t("generate_schedule"), command=self.generate_schedule)
+        generate_btn.pack(side=button_side, padx=5)
 
-        export_excel_btn = ttk.Button(controls_frame, text="Export to Excel", command=self.export_excel)
-        export_excel_btn.pack(side=tk.RIGHT, padx=5)
+        export_excel_btn = ttk.Button(controls_frame, text=t("export") + " Excel", command=self.export_excel)
+        export_excel_btn.pack(side=button_side, padx=5)
         
-        export_pdf_btn = ttk.Button(controls_frame, text="Export to PDF", command=self.export_pdf)
-        export_pdf_btn.pack(side=tk.RIGHT, padx=5)
+        export_pdf_btn = ttk.Button(controls_frame, text=t("export") + " PDF", command=self.export_pdf)
+        export_pdf_btn.pack(side=button_side, padx=5)
 
 
         # --- Timetable Frame ---
@@ -74,7 +93,7 @@ class TimetableApp(tk.Tk):
     def ensure_database_exists(self):
         """Ensure the database exists with sample data"""
         try:
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             # Check if tables exist
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='teachers'")
@@ -96,7 +115,7 @@ class TimetableApp(tk.Tk):
     def load_initial_data(self):
         """Loads data into the combobox based on the view selected"""
         view = self.view_var.get()
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         if view == "Classes":
             cursor.execute("SELECT name FROM classes ORDER BY name")
@@ -120,8 +139,8 @@ class TimetableApp(tk.Tk):
         for widget in self.timetable_frame.winfo_children():
             widget.destroy()
 
-        # Define headers
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        # Define headers with localization
+        days = [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday")]
         times = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00"]
 
         # Create Day Headers
@@ -152,7 +171,7 @@ class TimetableApp(tk.Tk):
                     else:  # Teachers view
                         lesson_info = f"{slot_data['subject']}\n{slot_data['class']}\n{slot_data['room']}"
                 else:
-                    lesson_info = "Free"
+                    lesson_info = t("free")
                 
                 slot_btn = ttk.Button(self.timetable_frame, text=lesson_info, style="Slot.TButton")
                 slot_btn.grid(row=r + 1, column=c + 1, sticky="nsew", padx=1, pady=1)
@@ -171,7 +190,7 @@ class TimetableApp(tk.Tk):
         if not selected_item:
             return {}
         
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
         schedule_data = {}
@@ -237,44 +256,61 @@ class TimetableApp(tk.Tk):
 
     def open_slot_edit_dialog(self, day, period, selected_item, view_type, current_data):
         """Open dialog to edit a time slot"""
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        days = [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday")]
         times = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00"]
         
         window = tk.Toplevel(self)
-        window.title(f"Edit {days[day]} {times[period]}")
+        window.title(f"{t('edit')} {days[day]} {times[period]}")
         window.geometry("400x300")
         
-        ttk.Label(window, text=f"Editing: {selected_item}").pack(pady=10)
-        ttk.Label(window, text=f"Time: {days[day]} {times[period]}").pack(pady=5)
+        # Apply RTL layout if Arabic
+        font_family = self.localization.get_font_family()
+        if self.localization.is_rtl():
+            window.option_add('*TLabel*font', font_family)
+        
+        ttk.Label(window, text=f"{t('editing')}: {selected_item}", 
+                 font=(font_family, 10)).pack(pady=10)
+        ttk.Label(window, text=f"{t('time')}: {days[day]} {times[period]}",
+                 font=(font_family, 10)).pack(pady=5)
         
         if current_data:
-            ttk.Label(window, text="Current Assignment:", font=('Helvetica', 10, 'bold')).pack(pady=10)
+            ttk.Label(window, text=t("current_assignment"), 
+                     font=(font_family, 10, 'bold')).pack(pady=10)
             if view_type == "Classes":
-                ttk.Label(window, text=f"Subject: {current_data['subject']}").pack()
-                ttk.Label(window, text=f"Teacher: {current_data['teacher']}").pack()
-                ttk.Label(window, text=f"Room: {current_data['room']}").pack()
+                ttk.Label(window, text=f"{t('subject')}: {current_data['subject']}",
+                         font=(font_family, 9)).pack()
+                ttk.Label(window, text=f"{t('teacher')}: {current_data['teacher']}",
+                         font=(font_family, 9)).pack()
+                ttk.Label(window, text=f"{t('room')}: {current_data['room']}",
+                         font=(font_family, 9)).pack()
             else:
-                ttk.Label(window, text=f"Subject: {current_data['subject']}").pack()
-                ttk.Label(window, text=f"Class: {current_data['class']}").pack()
-                ttk.Label(window, text=f"Room: {current_data['room']}").pack()
+                ttk.Label(window, text=f"{t('subject')}: {current_data['subject']}",
+                         font=(font_family, 9)).pack()
+                ttk.Label(window, text=f"{t('class')}: {current_data['class']}",
+                         font=(font_family, 9)).pack()
+                ttk.Label(window, text=f"{t('room')}: {current_data['room']}",
+                         font=(font_family, 9)).pack()
         
         # Action buttons
         button_frame = ttk.Frame(window)
         button_frame.pack(pady=20)
         
         if current_data:
-            ttk.Button(button_frame, text="Remove Lesson", 
+            ttk.Button(button_frame, text=t("remove_lesson"), 
                       command=lambda: self.remove_lesson(day, period, selected_item, view_type, window)).pack(side=tk.LEFT, padx=5)
         
-        ttk.Button(button_frame, text="Move Lesson", 
+        ttk.Button(button_frame, text=t("move_lesson"), 
                   command=lambda: self.move_lesson_dialog(day, period, selected_item, view_type, current_data, window)).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(button_frame, text=t("close"), 
+                  command=window.destroy).pack(side=tk.LEFT, padx=5)
         
         ttk.Button(button_frame, text="Cancel", command=window.destroy).pack(side=tk.LEFT, padx=5)
 
     def remove_lesson(self, day, period, selected_item, view_type, parent_window):
         """Remove a lesson from the schedule"""
         try:
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
             if view_type == "Classes":
@@ -307,13 +343,19 @@ class TimetableApp(tk.Tk):
             return
         
         window = tk.Toplevel(self)
-        window.title("Move Lesson")
+        window.title(t("move_lesson_title"))
         window.geometry("500x400")
         
-        ttk.Label(window, text="Select new time slot:", font=('Helvetica', 12, 'bold')).pack(pady=10)
+        # Apply RTL layout if Arabic
+        font_family = self.localization.get_font_family()
+        if self.localization.is_rtl():
+            window.option_add('*TLabel*font', font_family)
+        
+        ttk.Label(window, text=t("select_new_time_slot"), 
+                 font=(font_family, 12, 'bold')).pack(pady=10)
         
         # Create a mini timetable for selection
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        days = [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday")]
         times = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00"]
         
         frame = ttk.Frame(window)
@@ -321,28 +363,28 @@ class TimetableApp(tk.Tk):
         
         # Headers
         for i, day in enumerate(days):
-            ttk.Label(frame, text=day, font=('Helvetica', 10, 'bold')).grid(row=0, column=i + 1, padx=2, pady=2)
+            ttk.Label(frame, text=day, font=(font_family, 10, 'bold')).grid(row=0, column=i + 1, padx=2, pady=2)
         
         for i, time in enumerate(times):
-            ttk.Label(frame, text=time, font=('Helvetica', 9)).grid(row=i + 1, column=0, padx=2, pady=2, sticky="e")
+            ttk.Label(frame, text=time, font=(font_family, 9)).grid(row=i + 1, column=0, padx=2, pady=2, sticky="e")
         
         # Create buttons for each slot
         for r, time in enumerate(times):
             for c, day in enumerate(days):
-                btn = ttk.Button(frame, text="Select", width=8,
+                btn = ttk.Button(frame, text=t("select"), width=8,
                                command=lambda d=c, p=r: self.move_lesson(old_day, old_period, d, p, selected_item, view_type, lesson_data, window, parent_window))
                 btn.grid(row=r + 1, column=c + 1, padx=1, pady=1)
                 
                 # Disable current slot
                 if c == old_day and r == old_period:
-                    btn.config(state="disabled", text="Current")
+                    btn.config(state="disabled", text=t("current"))
         
-        ttk.Button(window, text="Cancel", command=window.destroy).pack(pady=10)
+        ttk.Button(window, text=t("cancel"), command=window.destroy).pack(pady=10)
 
     def move_lesson(self, old_day, old_period, new_day, new_period, selected_item, view_type, lesson_data, move_window, edit_window):
         """Move a lesson to a new time slot"""
         try:
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
             # Check for conflicts at the new time slot
@@ -420,7 +462,7 @@ class TimetableApp(tk.Tk):
         """Generate a new schedule with algorithm selection"""
         # Create algorithm selection dialog
         dialog = tk.Toplevel(self)
-        dialog.title("Select Scheduling Algorithm")
+        dialog.title(t("select_algorithm"))
         dialog.geometry("600x650")  # Increased size
         dialog.resizable(False, False)
         dialog.grab_set()  # Make dialog modal
@@ -432,23 +474,21 @@ class TimetableApp(tk.Tk):
         y = (self.winfo_y() + (self.winfo_height() // 2)) - 325
         dialog.geometry(f"600x650+{x}+{y}")
         
-        ttk.Label(dialog, text="Choose Scheduling Algorithm", 
-                 font=('Helvetica', 14, 'bold')).pack(pady=20)
+        font_family = self.localization.get_font_family()
+        ttk.Label(dialog, text=t("choose_algorithm"), 
+                 font=(font_family, 14, 'bold')).pack(pady=20)
         
         # Algorithm selection
         algorithm_var = tk.StringVar(value="fast_greedy")
         
-        # Get algorithm information from SolverFactory
-        from ..solvers import SolverFactory
-        solver_info = SolverFactory.get_solver_info()
-        
+        # Get localized algorithm information
         algorithms = [
-            ("ultra_fast", solver_info["ultra_fast"]["name"], solver_info["ultra_fast"]["description"]),
-            ("smart_greedy", solver_info["smart_greedy"]["name"], solver_info["smart_greedy"]["description"]), 
-            ("ml_inspired", solver_info["ml_inspired"]["name"], solver_info["ml_inspired"]["description"]),
-            ("fast_greedy", solver_info["fast_greedy"]["name"], solver_info["fast_greedy"]["description"]),
-            ("ortools", solver_info["ortools"]["name"], solver_info["ortools"]["description"]),
-            ("simple", solver_info["simple"]["name"], solver_info["simple"]["description"])
+            ("ultra_fast", t("ultra_fast"), t("ultra_fast_desc")),
+            ("smart_greedy", t("smart_greedy"), t("smart_greedy_desc")), 
+            ("ml_inspired", t("ml_inspired"), t("ml_inspired_desc")),
+            ("fast_greedy", t("fast_greedy"), t("fast_greedy_desc")),
+            ("ortools", t("ortools"), t("ortools_desc")),
+            ("simple", t("simple"), t("simple_desc"))
         ]
         
         # Create scrollable frame for algorithms
@@ -472,19 +512,20 @@ class TimetableApp(tk.Tk):
             algo_frame = ttk.LabelFrame(scrollable_frame, text="", padding=10)
             algo_frame.pack(fill=tk.X, padx=5, pady=8)
             
-            # Radio button with larger font
+            # Radio button with larger font and RTL support
+            anchor_side = tk.E if self.localization.is_rtl() else tk.W
             radio_btn = ttk.Radiobutton(algo_frame, text=title, variable=algorithm_var, 
                                        value=value)
-            radio_btn.pack(anchor=tk.W)
+            radio_btn.pack(anchor=anchor_side)
             radio_btn.configure(style="Large.TRadiobutton")
             
-            # Description with better formatting  
+            # Description with better formatting and localized font
             desc_lines = description.split('\n')
             for line in desc_lines:
                 if line.strip():
-                    desc_label = ttk.Label(algo_frame, text=line, font=('Helvetica', 9), 
+                    desc_label = ttk.Label(algo_frame, text=line, font=(font_family, 9), 
                                          foreground='#666666')
-                    desc_label.pack(anchor=tk.W, padx=20, pady=1)
+                    desc_label.pack(anchor=anchor_side, padx=20, pady=1)
         
         # Pack canvas and scrollbar
         canvas.pack(side="left", fill="both", expand=True)
@@ -508,13 +549,13 @@ class TimetableApp(tk.Tk):
             dialog.destroy()
             self.run_scheduling_algorithm(algorithm)
         
-        # Larger, More prominent buttons
-        generate_btn = ttk.Button(btn_frame, text="🚀 Generate Schedule", 
+        # Larger, More prominent buttons with localized text
+        generate_btn = ttk.Button(btn_frame, text=t("generate"), 
                                  command=run_selected_algorithm)
         generate_btn.pack(side=tk.LEFT, padx=15, pady=10)
         generate_btn.configure(width=20)  # Make button wider
         
-        cancel_btn = ttk.Button(btn_frame, text="❌ Cancel", 
+        cancel_btn = ttk.Button(btn_frame, text=t("cancel"), 
                                command=dialog.destroy)
         cancel_btn.pack(side=tk.LEFT, padx=15, pady=10)
         cancel_btn.configure(width=15)  # Make button wider
@@ -532,9 +573,13 @@ class TimetableApp(tk.Tk):
         
         # Show progress
         progress_window = tk.Toplevel(self)
-        progress_window.title("Generating Schedule")
+        progress_window.title(t("generating_schedule"))
         progress_window.geometry("400x150")
         progress_window.grab_set()
+        
+        # Apply RTL layout if Arabic
+        if self.localization.is_rtl():
+            progress_window.option_add('*TLabel*font', self.localization.get_font_family())
         
         # Center the progress window
         progress_window.transient(self)
@@ -543,14 +588,15 @@ class TimetableApp(tk.Tk):
         y = (self.winfo_y() + (self.winfo_height() // 2)) - 75
         progress_window.geometry(f"400x150+{x}+{y}")
         
-        ttk.Label(progress_window, text=f"Running {algorithm.replace('_', ' ').title()} algorithm...", 
-                 font=('Helvetica', 12)).pack(pady=20)
+        ttk.Label(progress_window, text=f"{t('running_algorithm')}: {algorithm.replace('_', ' ').title()}...", 
+                 font=(self.localization.get_font_family(), 12)).pack(pady=20)
         
         progress_bar = ttk.Progressbar(progress_window, mode='indeterminate')
         progress_bar.pack(pady=10, padx=20, fill=tk.X)
         progress_bar.start()
         
-        status_label = ttk.Label(progress_window, text="Initializing...")
+        status_label = ttk.Label(progress_window, text=t("initializing"), 
+                                font=(self.localization.get_font_family(), 10))
         status_label.pack(pady=10)
         
         # Update display
@@ -571,7 +617,7 @@ class TimetableApp(tk.Tk):
             if not solver_type:
                 raise ValueError(f"Unknown algorithm: {algorithm}")
             
-            status_label.config(text="Running algorithm...")
+            status_label.config(text=t("running_algorithm_status"))
             progress_window.update()
             
             # Use the solver factory
@@ -582,29 +628,30 @@ class TimetableApp(tk.Tk):
             progress_window.destroy()
             
             if result.success:
-                tk.messagebox.showinfo("Schedule Generated", 
-                    f"✅ Successfully generated schedule!\n\n"
-                    f"Algorithm: {result.algorithm.replace('_', ' ').title()}\n"
-                    f"Time taken: {result.time_taken:.2f} seconds\n"
-                    f"Lessons scheduled: {result.lessons_count}\n\n"
-                    f"The schedule is now displayed in the main window.")
+                success_msg = f"✅ {t('schedule_generated_successfully')}\n\n"
+                success_msg += f"{t('algorithm')}: {result.algorithm.replace('_', ' ').title()}\n"
+                success_msg += f"{t('time_taken')}: {result.time_taken:.2f} {t('seconds')}\n"
+                success_msg += f"{t('lessons_scheduled')}: {result.lessons_count}\n\n"
+                success_msg += t("schedule_displayed_main_window")
+                
+                tk.messagebox.showinfo(t("schedule_generated"), success_msg)
                 
                 # Refresh the timetable display
                 self.draw_timetable()
             else:
-                error_msg = f"❌ Failed to generate schedule.\n\n"
-                error_msg += f"Algorithm: {result.algorithm.replace('_', ' ').title()}\n"
-                error_msg += f"Time taken: {result.time_taken:.2f} seconds\n\n"
+                error_msg = f"❌ {t('failed_to_generate_schedule')}\n\n"
+                error_msg += f"{t('algorithm')}: {result.algorithm.replace('_', ' ').title()}\n"
+                error_msg += f"{t('time_taken')}: {result.time_taken:.2f} {t('seconds')}\n\n"
                 if result.error:
-                    error_msg += f"Error: {result.error}\n\n"
-                error_msg += "Please check your lesson requirements and constraints."
+                    error_msg += f"{t('error')}: {result.error}\n\n"
+                error_msg += t("check_lesson_requirements_constraints")
                 
-                tk.messagebox.showerror("Scheduling Failed", error_msg)
+                tk.messagebox.showerror(t("scheduling_failed"), error_msg)
         
         except Exception as e:
             progress_bar.stop()
             progress_window.destroy()
-            tk.messagebox.showerror("Error", f"An error occurred:\n{str(e)}")
+            tk.messagebox.showerror(t("error"), f"{t('an_error_occurred')}:\n{str(e)}")
             print(f"Error in scheduling: {e}")  # Debug info
         
     def create_menu(self):
@@ -614,46 +661,62 @@ class TimetableApp(tk.Tk):
         
         # Data menu
         data_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Data", menu=data_menu)
-        data_menu.add_command(label="Manage Teachers", command=self.manage_teachers)
-        data_menu.add_command(label="Manage Classes", command=self.manage_classes)
-        data_menu.add_command(label="Manage Subjects", command=self.manage_subjects)
-        data_menu.add_command(label="Manage Rooms", command=self.manage_rooms)
+        menubar.add_cascade(label=t("menu_data"), menu=data_menu)
+        data_menu.add_command(label=t("manage_teachers"), command=self.manage_teachers)
+        data_menu.add_command(label=t("manage_classes"), command=self.manage_classes)
+        data_menu.add_command(label=t("manage_subjects"), command=self.manage_subjects)
+        data_menu.add_command(label=t("manage_rooms"), command=self.manage_rooms)
         data_menu.add_separator()
-        data_menu.add_command(label="Set Lesson Requirements", command=self.manage_lessons)
-        data_menu.add_command(label="Teacher Preferences", command=self.manage_teacher_preferences)
-        data_menu.add_command(label="Teacher Availability", command=self.manage_teacher_availability)
+        data_menu.add_command(label=t("set_lesson_requirements"), command=self.manage_lessons)
+        data_menu.add_command(label=t("teacher_preferences"), command=self.manage_teacher_preferences)
+        data_menu.add_command(label=t("teacher_availability"), command=self.manage_teacher_availability)
         
         # Rules menu
         rules_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Rules", menu=rules_menu)
-        rules_menu.add_command(label="Scheduling Rules", command=self.manage_scheduling_rules)
-        rules_menu.add_command(label="Constraint Settings", command=self.manage_constraints)
-        rules_menu.add_command(label="Time Settings", command=self.manage_time_settings)
+        menubar.add_cascade(label=t("menu_rules"), menu=rules_menu)
+        rules_menu.add_command(label=t("scheduling_rules"), command=self.manage_scheduling_rules)
+        rules_menu.add_command(label=t("constraint_settings"), command=self.manage_constraints)
+        rules_menu.add_command(label=t("time_settings"), command=self.manage_time_settings)
         
         # Tools menu
         tools_menu = tk.Menu(menubar, tearoff=0)
-        menubar.add_cascade(label="Tools", menu=tools_menu)
-        tools_menu.add_command(label="Database Statistics", command=self.show_database_stats)
-        tools_menu.add_command(label="Clear All Schedules", command=self.clear_schedules)
-        tools_menu.add_command(label="Import Sample Data", command=self.import_sample_data)
-        tools_menu.add_command(label="Backup Database", command=self.backup_database)
+        menubar.add_cascade(label=t("menu_tools"), menu=tools_menu)
+        tools_menu.add_command(label=t("database_statistics"), command=self.show_database_stats)
+        tools_menu.add_command(label=t("clear_all_schedules"), command=self.clear_schedules)
+        tools_menu.add_command(label=t("import_sample_data"), command=self.import_sample_data)
+        tools_menu.add_command(label=t("backup_database"), command=self.backup_database)
+        
+        # Language menu
+        language_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label=t("menu_language"), menu=language_menu)
+        language_menu.add_command(label=t("english"), command=lambda: self.change_language("en"))
+        language_menu.add_command(label=t("arabic"), command=lambda: self.change_language("ar"))
+    
+    def change_language(self, language: str):
+        """Change the application language"""
+        self.localization.set_language(language)
+        # Show restart message
+        messagebox.showinfo(
+            t("menu_language"),
+            "Please restart the application for language changes to take effect.\n\n" +
+            "يرجى إعادة تشغيل التطبيق لتطبيق تغييرات اللغة."
+        )
 
     def manage_teachers(self):
         """Open teacher management window"""
-        self.open_data_management_window("Teachers", "teachers", ["name", "availability_json"])
+        self.open_data_management_window(t("manage_teachers"), "teachers", ["name", "availability_json"])
 
     def manage_classes(self):
         """Open class management window"""
-        self.open_data_management_window("Classes", "classes", ["name", "grade_level"])
+        self.open_data_management_window(t("manage_classes"), "classes", ["name", "grade_level"])
 
     def manage_subjects(self):
         """Open subject management window"""
-        self.open_data_management_window("Subjects", "subjects", ["name", "needs_lab"])
+        self.open_data_management_window(t("manage_subjects"), "subjects", ["name", "needs_lab"])
 
     def manage_rooms(self):
         """Open room management window"""
-        self.open_data_management_window("Rooms", "rooms", ["name", "is_lab"])
+        self.open_data_management_window(t("manage_rooms"), "rooms", ["name", "is_lab"])
 
     def manage_lessons(self):
         """Open lesson requirements management window"""
@@ -662,8 +725,13 @@ class TimetableApp(tk.Tk):
     def open_data_management_window(self, title, table_name, columns):
         """Open a generic data management window"""
         window = tk.Toplevel(self)
-        window.title(f"Manage {title}")
+        window.title(title)
         window.geometry("600x400")
+        
+        # Apply RTL layout if Arabic
+        font_family = self.localization.get_font_family()
+        if self.localization.is_rtl():
+            window.option_add('*TLabel*font', font_family)
         
         # Create treeview for data display
         tree_frame = ttk.Frame(window)
@@ -673,10 +741,12 @@ class TimetableApp(tk.Tk):
         tree.pack(fill=tk.BOTH, expand=True)
         
         # Configure columns
-        tree.heading('#0', text='ID')
+        tree.heading('#0', text=t("id"))
         tree.column('#0', width=50)
         for col in columns:
-            tree.heading(col, text=col.replace('_', ' ').title())
+            # Try to get localized column name, fallback to formatted column name
+            col_text = t(col) if col in ['name', 'subject', 'teacher', 'class', 'room'] else col.replace('_', ' ').title()
+            tree.heading(col, text=col_text)
             tree.column(col, width=150)
         
         # Load data
@@ -696,7 +766,7 @@ class TimetableApp(tk.Tk):
         for item in tree.get_children():
             tree.delete(item)
         
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(f"SELECT id, {', '.join(columns)} FROM {table_name}")
         for row in cursor.fetchall():
@@ -735,7 +805,7 @@ class TimetableApp(tk.Tk):
             entries[col] = entry
         
         def save_record():
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
             field_values = [entries[col].get() for col in columns]
@@ -764,7 +834,7 @@ class TimetableApp(tk.Tk):
         
         record_id = tree.item(selection[0])['text']
         
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(f"DELETE FROM {table_name} WHERE id = ?", (record_id,))
         conn.commit()
@@ -830,7 +900,7 @@ class TimetableApp(tk.Tk):
             times = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00"]
             
             # Create sheets for each class
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("SELECT name FROM classes ORDER BY name")
             classes = [row[0] for row in cursor.fetchall()]
@@ -924,7 +994,7 @@ class TimetableApp(tk.Tk):
             for item in tree.get_children():
                 tree.delete(item)
             
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT t.name, c.name, tp.preference_score, tp.id
@@ -973,7 +1043,7 @@ class TimetableApp(tk.Tk):
         score_spin.pack(pady=5)
         
         # Load teachers and classes
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
         cursor.execute("SELECT name FROM teachers ORDER BY name")
@@ -990,7 +1060,7 @@ class TimetableApp(tk.Tk):
             if not teacher_var.get() or not class_var.get():
                 return
             
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
             # Get IDs
@@ -1037,7 +1107,7 @@ class TimetableApp(tk.Tk):
         score_spin.pack(pady=5)
         
         def save_preference():
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("UPDATE teacher_preferences SET preference_score = ? WHERE id = ?", 
                          (int(score_var.get()), pref_id))
@@ -1058,7 +1128,7 @@ class TimetableApp(tk.Tk):
         item = tree.item(selection[0])
         pref_id = item['tags'][0]
         
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM teacher_preferences WHERE id = ?", (pref_id,))
         conn.commit()
@@ -1082,7 +1152,7 @@ class TimetableApp(tk.Tk):
         teacher_combo.pack(side=tk.LEFT, padx=10)
         
         # Load teachers
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM teachers ORDER BY name")
         teachers = [row[0] for row in cursor.fetchall()]
@@ -1122,7 +1192,7 @@ class TimetableApp(tk.Tk):
             for var in availability_vars.values():
                 var.set(True)
             
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("SELECT availability_json FROM teachers WHERE name = ?", (teacher_var.get(),))
             result = cursor.fetchone()
@@ -1149,7 +1219,7 @@ class TimetableApp(tk.Tk):
                         unavailable[day] = []
                     unavailable[day].append(period)
             
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("UPDATE teachers SET availability_json = ? WHERE name = ?", 
                          (json.dumps(unavailable), teacher_var.get()))
@@ -1190,7 +1260,7 @@ class TimetableApp(tk.Tk):
             for item in tree.get_children():
                 tree.delete(item)
             
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("""
                 SELECT c.name, s.name, l.lessons_per_week, l.id
@@ -1241,7 +1311,7 @@ class TimetableApp(tk.Tk):
         lessons_spin.pack(pady=5)
         
         # Load classes and subjects
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
         cursor.execute("SELECT name FROM classes ORDER BY name")
@@ -1258,7 +1328,7 @@ class TimetableApp(tk.Tk):
             if not class_var.get() or not subject_var.get():
                 return
             
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
             # Get IDs
@@ -1305,7 +1375,7 @@ class TimetableApp(tk.Tk):
         lessons_spin.pack(pady=5)
         
         def save_requirement():
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("UPDATE lessons SET lessons_per_week = ? WHERE id = ?", 
                          (int(lessons_var.get()), lesson_id))
@@ -1326,7 +1396,7 @@ class TimetableApp(tk.Tk):
         item = tree.item(selection[0])
         lesson_id = item['tags'][0]
         
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute("DELETE FROM lessons WHERE id = ?", (lesson_id,))
         conn.commit()
@@ -1341,7 +1411,7 @@ class TimetableApp(tk.Tk):
         if not result:
             return
         
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
         # Clear existing lessons
@@ -1391,7 +1461,7 @@ class TimetableApp(tk.Tk):
         conn.close()
         
         refresh_callback()
-        tk.messagebox.showinfo("Success", "Lesson requirements generated successfully!")
+        tk.messagebox.showinfo(t("success"), t("lesson_requirements_generated"))
 
     def manage_scheduling_rules(self):
         """Manage scheduling rules and constraints"""
@@ -1506,7 +1576,7 @@ class TimetableApp(tk.Tk):
         window.geometry("500x400")
         
         # Get statistics
-        conn = sqlite3.connect('school_timetable.db')
+        conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
         stats = {}
@@ -1557,14 +1627,14 @@ class TimetableApp(tk.Tk):
         result = tk.messagebox.askyesno("Clear Schedules", 
                                        "This will delete all generated schedules. Continue?")
         if result:
-            conn = sqlite3.connect('school_timetable.db')
+            conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute("DELETE FROM schedules WHERE is_locked = 0")
             conn.commit()
             conn.close()
             
             self.draw_timetable()
-            tk.messagebox.showinfo("Success", "All schedules cleared!")
+            tk.messagebox.showinfo(t("success"), t("all_schedules_cleared"))
 
     def import_sample_data(self):
         """Import fresh sample data"""
@@ -1578,7 +1648,7 @@ class TimetableApp(tk.Tk):
                 conn.close()
                 self.load_initial_data()
                 self.draw_timetable()
-                tk.messagebox.showinfo("Success", "Sample data imported!")
+                tk.messagebox.showinfo(t("success"), t("sample_data_imported"))
 
     def backup_database(self):
         """Create a backup of the database"""
@@ -1590,9 +1660,9 @@ class TimetableApp(tk.Tk):
         
         try:
             shutil.copy2("school_timetable.db", backup_name)
-            tk.messagebox.showinfo("Backup Created", f"Database backed up as: {backup_name}")
+            tk.messagebox.showinfo(t("backup_created"), f"{t('database_backed_up')}: {backup_name}")
         except Exception as e:
-            tk.messagebox.showerror("Backup Failed", f"Failed to create backup: {e}")
+            tk.messagebox.showerror(t("backup_failed"), f"{t('failed_to_create_backup')}: {e}")
 
 if __name__ == "__main__":
     app = TimetableApp()
