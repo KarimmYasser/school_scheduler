@@ -1,5 +1,6 @@
 """Database Management Package"""
 
-from .database import DatabaseManager
+from .database_manager import DatabaseManager
+from .database_setup import setup_database
 
-__all__ = ['DatabaseManager']
+__all__ = ['DatabaseManager', 'setup_database']

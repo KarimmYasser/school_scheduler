@@ -8,9 +8,6 @@ class TimetableApp(tk.Tk):
         super().__init__()
         self.title("School Timetable Generator")
         self.geometry("1200x800")
-        
-        # Database path
-        self.db_path = "data/database/school_timetable.db"
 
         # --- Style ---
         self.style = ttk.Style(self)
@@ -81,7 +78,7 @@ class TimetableApp(tk.Tk):
             if not cursor.fetchone():
                 # Database doesn't exist, create it
                 conn.close()
-                from ..database.database_setup import create_connection, create_tables, add_sample_data
+                from core.database_setup import create_connection, create_tables, add_sample_data
                 conn = create_connection()
                 if conn:
                     create_tables(conn)
@@ -438,17 +435,13 @@ class TimetableApp(tk.Tk):
         # Algorithm selection
         algorithm_var = tk.StringVar(value="fast_greedy")
         
-        # Get algorithm information from SolverFactory
-        from ..solvers import SolverFactory
-        solver_info = SolverFactory.get_solver_info()
-        
         algorithms = [
-            ("ultra_fast", solver_info["ultra_fast"]["name"], solver_info["ultra_fast"]["description"]),
-            ("smart_greedy", solver_info["smart_greedy"]["name"], solver_info["smart_greedy"]["description"]), 
-            ("ml_inspired", solver_info["ml_inspired"]["name"], solver_info["ml_inspired"]["description"]),
-            ("fast_greedy", solver_info["fast_greedy"]["name"], solver_info["fast_greedy"]["description"]),
-            ("ortools", solver_info["ortools"]["name"], solver_info["ortools"]["description"]),
-            ("simple", solver_info["simple"]["name"], solver_info["simple"]["description"])
+            ("ultra_fast", "⚡ Ultra-Fast (Recommended)", "Optimized ultra-fast algorithm\n• Typical time: < 0.5 seconds\n• Quality: Very Good\n• Best for: Instant scheduling"),
+            ("smart_greedy", "🚀 Smart Greedy", "Intelligent greedy with heuristics\n• Typical time: < 1 second\n• Quality: Excellent\n• Best for: Fast + high quality"),
+            ("ml_inspired", "� ML-Inspired Scheduler", "Pattern-learning algorithm\n• Typical time: 1-3 seconds\n• Quality: Excellent\n• Best for: Learning from data"),
+            ("fast_greedy", "🎯 Fast Greedy", "Basic fast greedy algorithm\n• Typical time: < 1 second\n• Quality: Good\n• Best for: Quick results"),
+            ("ortools", "🔧 OR-Tools (Classic)", "Google's constraint solver\n• Typical time: 10-30 seconds\n• Quality: Optimal\n• Best for: Guaranteed optimality"),
+            ("simple", "🔄 Simple Fallback", "Basic fallback algorithm\n• Typical time: < 2 seconds\n• Quality: Good\n• Best for: Compatibility")
         ]
         
         # Create scrollable frame for algorithms
@@ -527,8 +520,8 @@ class TimetableApp(tk.Tk):
         dialog.focus_set()
     
     def run_scheduling_algorithm(self, algorithm: str):
-        """Run the selected scheduling algorithm using the SolverFactory"""
-        from ..solvers import SolverFactory, SolverType
+        """Run the selected scheduling algorithm"""
+        import time
         
         # Show progress
         progress_window = tk.Toplevel(self)
@@ -536,14 +529,7 @@ class TimetableApp(tk.Tk):
         progress_window.geometry("400x150")
         progress_window.grab_set()
         
-        # Center the progress window
-        progress_window.transient(self)
-        self.update_idletasks()
-        x = (self.winfo_x() + (self.winfo_width() // 2)) - 200
-        y = (self.winfo_y() + (self.winfo_height() // 2)) - 75
-        progress_window.geometry(f"400x150+{x}+{y}")
-        
-        ttk.Label(progress_window, text=f"Running {algorithm.replace('_', ' ').title()} algorithm...", 
+        ttk.Label(progress_window, text=f"Running {algorithm} algorithm...", 
                  font=('Helvetica', 12)).pack(pady=20)
         
         progress_bar = ttk.Progressbar(progress_window, mode='indeterminate')
@@ -557,55 +543,94 @@ class TimetableApp(tk.Tk):
         progress_window.update()
         
         try:
-            # Map algorithm names to SolverType enum
-            solver_map = {
-                "ultra_fast": SolverType.ULTRA_FAST,
-                "smart_greedy": SolverType.SMART_GREEDY,
-                "ml_inspired": SolverType.ML_INSPIRED,
-                "fast_greedy": SolverType.FAST_GREEDY,
-                "ortools": SolverType.ORTOOLS,
-                "simple": SolverType.SIMPLE
-            }
+            start_time = time.time()
+            success = False
             
-            solver_type = solver_map.get(algorithm)
-            if not solver_type:
-                raise ValueError(f"Unknown algorithm: {algorithm}")
+            if algorithm == "ultra_fast":
+                status_label.config(text="Running ultra-fast algorithm...")
+                progress_window.update()
+                from schedule_engines.ultra_fast_solver import solve_ultra_fast
+                success = solve_ultra_fast("ultra_fast")
+                
+            elif algorithm == "smart_greedy":
+                status_label.config(text="Running smart greedy algorithm...")
+                progress_window.update()
+                from schedule_engines.ultra_fast_solver import solve_ultra_fast
+                success = solve_ultra_fast("smart_greedy")
+                
+            elif algorithm == "ml_inspired":
+                status_label.config(text="Analyzing patterns and scheduling...")
+                progress_window.update()
+                from schedule_engines.ml_solver import solve_with_ml_scheduler
+                success = solve_with_ml_scheduler()
+                
+            elif algorithm == "fast_greedy":
+                status_label.config(text="Running fast greedy algorithm...")
+                progress_window.update()
+                from schedule_engines.fast_solver import solve_with_fast_scheduler
+                success = solve_with_fast_scheduler("greedy")
+                
+            elif algorithm == "ortools":
+                status_label.config(text="Solving with OR-Tools...")
+                progress_window.update()
+                try:
+                    from schedule_engines.solver import solve_school_scheduling_from_db
+                    solution = solve_school_scheduling_from_db()
+                    success = solution is not None
+                except ImportError:
+                    tk.messagebox.showerror("Error", "OR-Tools not available. Please install: pip install ortools")
+                    progress_window.destroy()
+                    return
+                    
+            elif algorithm == "simple":
+                status_label.config(text="Running simple algorithm...")
+                progress_window.update()
+                from schedule_engines.solver_simple import solve_school_scheduling_from_db
+                solution = solve_school_scheduling_from_db()
+                success = solution is not None
             
-            status_label.config(text="Running algorithm...")
-            progress_window.update()
-            
-            # Use the solver factory
-            db_path = "data/database/school_timetable.db"
-            result = SolverFactory.solve(solver_type, db_path)
+            end_time = time.time()
+            elapsed = end_time - start_time
             
             progress_bar.stop()
             progress_window.destroy()
             
-            if result.success:
+            if success:
+                # Count lessons
+                conn = sqlite3.connect('school_timetable.db')
+                cursor = conn.cursor()
+                cursor.execute("SELECT COUNT(*) FROM schedules WHERE is_locked = 0")
+                lesson_count = cursor.fetchone()[0]
+                conn.close()
+                
                 tk.messagebox.showinfo("Schedule Generated", 
                     f"✅ Successfully generated schedule!\n\n"
-                    f"Algorithm: {result.algorithm.replace('_', ' ').title()}\n"
-                    f"Time taken: {result.time_taken:.2f} seconds\n"
-                    f"Lessons scheduled: {result.lessons_count}\n\n"
+                    f"Algorithm: {algorithm.replace('_', ' ').title()}\n"
+                    f"Time taken: {elapsed:.2f} seconds\n"
+                    f"Lessons scheduled: {lesson_count}\n\n"
                     f"The schedule is now displayed in the main window.")
                 
                 # Refresh the timetable display
                 self.draw_timetable()
             else:
-                error_msg = f"❌ Failed to generate schedule.\n\n"
-                error_msg += f"Algorithm: {result.algorithm.replace('_', ' ').title()}\n"
-                error_msg += f"Time taken: {result.time_taken:.2f} seconds\n\n"
-                if result.error:
-                    error_msg += f"Error: {result.error}\n\n"
-                error_msg += "Please check your lesson requirements and constraints."
+                tk.messagebox.showerror("Scheduling Failed", 
+                    f"❌ Failed to generate schedule.\n\n"
+                    f"Algorithm: {algorithm.replace('_', ' ').title()}\n"
+                    f"Time taken: {elapsed:.2f} seconds\n\n"
+                    f"Please check your lesson requirements and constraints.")
                 
-                tk.messagebox.showerror("Scheduling Failed", error_msg)
-        
+        except ImportError as e:
+            progress_bar.stop()
+            progress_window.destroy()
+            tk.messagebox.showerror("Import Error", 
+                f"Error loading scheduling algorithm:\n{e}\n\n"
+                f"Please ensure all required modules are installed.")
         except Exception as e:
             progress_bar.stop()
             progress_window.destroy()
-            tk.messagebox.showerror("Error", f"An error occurred:\n{str(e)}")
-            print(f"Error in scheduling: {e}")  # Debug info
+            tk.messagebox.showerror("Scheduling Error", 
+                f"An error occurred during scheduling:\n{e}")
+            print(f"Detailed error: {e}")  # For debugging
         
     def create_menu(self):
         """Create the application menu bar"""
@@ -776,7 +801,7 @@ class TimetableApp(tk.Tk):
     def export_pdf(self):
         """Export current view to PDF"""
         try:
-            from ..utils.export import export_schedule_to_pdf
+            from core.export import export_schedule_to_pdf
             
             selected_item = self.item_selector.get()
             view_type = self.view_var.get()
@@ -1571,7 +1596,7 @@ class TimetableApp(tk.Tk):
         result = tk.messagebox.askyesno("Import Sample Data", 
                                        "This will replace all current data with fresh sample data. Continue?")
         if result:
-            from ..database.database_setup import add_sample_data, create_connection
+            from core.database_setup import add_sample_data, create_connection
             conn = create_connection()
             if conn:
                 add_sample_data(conn)
