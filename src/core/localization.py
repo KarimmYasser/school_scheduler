@@ -98,6 +98,63 @@ class Localization:
                 "edit": "Edit", 
                 "delete": "Delete",
                 "refresh": "Refresh",
+                "save": "Save",
+                
+                # Form Labels  
+                "teacher": "Teacher",
+                "class": "Class",
+                "subject": "Subject",
+                "room": "Room",
+                "lessons_per_week": "Lessons per Week",
+                "select_teacher": "Select Teacher",
+                "available": "Available",
+                "preference": "Preference",
+                "requirement": "Requirement",
+                "selected": "Selected",
+                
+                # Window Titles
+                "teacher_preferences": "Teacher Preferences",
+                "add_teacher_preference": "Add Teacher Preference",
+                "edit_teacher_preference": "Edit Teacher Preference",
+                "teacher_availability": "Teacher Availability",
+                "lesson_requirements": "Lesson Requirements",
+                "add_lesson_requirement": "Add Lesson Requirement",
+                "edit_lesson_requirement": "Edit Lesson Requirement",
+                "database_statistics": "Database Statistics",
+                "scheduling_rules": "Scheduling Rules",
+                "constraint_settings": "Constraint Settings",
+                "time_settings": "Time Settings",
+                
+                # Buttons and Actions
+                "add_preference": "Add Preference",
+                "edit_selected": "Edit Selected",
+                "delete_selected": "Delete Selected",
+                "save_availability": "Save Availability",
+                "mark_all_available": "Mark All Available",
+                "mark_all_unavailable": "Mark All Unavailable",
+                "add_requirement": "Add Requirement",
+                
+                # Export Related
+                "export_to_excel":  "Export to Excel",
+                "export_to_pdf": "Export to PDF", 
+                "time_slot": "Time Slot",
+                "please_select_item": "Please select an item to export",
+                "pdf_exported": "PDF exported to",
+                "openpyxl_not_installed": "openpyxl not installed. Install with: pip install openpyxl",
+                
+                # Statistics Labels
+                "teachers": "Teachers",
+                "classes": "Classes", 
+                "subjects": "Subjects",
+                "rooms": "Rooms",
+                "lessons": "Lessons",
+                "require_labs": "require labs",
+                "are_labs": "are labs",
+                "lesson_requirements": "Lesson Requirements",
+                "total_lessons_needed": "Total Lessons Needed",
+                "scheduled_lessons": "Scheduled Lessons",
+                "teacher_preferences": "Teacher Preferences",
+                "utilization_percentage": "Utilization Percentage",
                 
                 # Success/Error Messages
                 "success": "Success",
@@ -242,6 +299,63 @@ class Localization:
                 "edit": "تحرير",
                 "delete": "حذف", 
                 "refresh": "تحديث",
+                "save": "حفظ",
+                
+                # Form Labels  
+                "teacher": "المعلم",
+                "class": "الصف",
+                "subject": "المادة",
+                "room": "الغرفة",
+                "lessons_per_week": "الحصص في الأسبوع",
+                "select_teacher": "اختر المعلم",
+                "available": "متاح",
+                "preference": "التفضيل",
+                "requirement": "المتطلب",
+                "selected": "محدد",
+                
+                # Window Titles
+                "teacher_preferences": "تفضيلات المعلمين",
+                "add_teacher_preference": "إضافة تفضيل معلم",
+                "edit_teacher_preference": "تعديل تفضيل معلم",
+                "teacher_availability": "توفر المعلمين",
+                "lesson_requirements": "متطلبات الحصص",
+                "add_lesson_requirement": "إضافة متطلب حصة",
+                "edit_lesson_requirement": "تعديل متطلب حصة",
+                "database_statistics": "إحصائيات قاعدة البيانات",
+                "scheduling_rules": "قواعد الجدولة",
+                "constraint_settings": "إعدادات القيود",
+                "time_settings": "إعدادات الوقت",
+                
+                # Buttons and Actions
+                "add_preference": "إضافة تفضيل",
+                "edit_selected": "تعديل المحدد",
+                "delete_selected": "حذف المحدد",
+                "save_availability": "حفظ التوفر",
+                "mark_all_available": "تعيين الكل كمتاح",
+                "mark_all_unavailable": "تعيين الكل كغير متاح",
+                "add_requirement": "إضافة متطلب",
+                
+                # Export Related
+                "export_to_excel": "تصدير إلى إكسل",
+                "export_to_pdf": "تصدير إلى PDF",
+                "time_slot": "الفترة الزمنية",
+                "please_select_item": "يرجى تحديد عنصر للتصدير",
+                "pdf_exported": "تم تصدير PDF إلى",
+                "openpyxl_not_installed": "openpyxl غير مثبت. ثبته بالأمر: pip install openpyxl",
+                
+                # Statistics Labels
+                "teachers": "المعلمون",
+                "classes": "الصفوف",
+                "subjects": "المواد",
+                "rooms": "الغرف",
+                "lessons": "الحصص",
+                "require_labs": "تتطلب مختبرات",
+                "are_labs": "هي مختبرات",
+                "lesson_requirements": "متطلبات الحصص",
+                "total_lessons_needed": "إجمالي الحصص المطلوبة",
+                "scheduled_lessons": "الحصص المجدولة",
+                "teacher_preferences": "تفضيلات المعلمين",
+                "utilization_percentage": "نسبة الاستخدام",
                 
                 # Success/Error Messages
                 "success": "نجح",

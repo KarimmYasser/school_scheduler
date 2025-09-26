@@ -756,10 +756,10 @@ class TimetableApp(tk.Tk):
         buttons_frame = ttk.Frame(window)
         buttons_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        ttk.Button(buttons_frame, text="Add", command=lambda: self.add_record(table_name, columns, tree)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(buttons_frame, text="Edit", command=lambda: self.edit_record(table_name, columns, tree)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(buttons_frame, text="Delete", command=lambda: self.delete_record(table_name, tree)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(buttons_frame, text="Refresh", command=lambda: self.refresh_data_tree(tree, table_name, columns)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(buttons_frame, text=t("add"), command=lambda: self.add_record(table_name, columns, tree)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(buttons_frame, text=t("edit"), command=lambda: self.edit_record(table_name, columns, tree)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(buttons_frame, text=t("delete"), command=lambda: self.delete_record(table_name, tree)).pack(side=tk.LEFT, padx=5)
+        ttk.Button(buttons_frame, text=t("refresh"), command=lambda: self.refresh_data_tree(tree, table_name, columns)).pack(side=tk.LEFT, padx=5)
 
     def refresh_data_tree(self, tree, table_name, columns):
         """Refresh the data in a treeview"""
@@ -792,7 +792,7 @@ class TimetableApp(tk.Tk):
     def edit_record_window(self, table_name, columns, tree, record_id=None, values=None):
         """Open edit/add record window"""
         window = tk.Toplevel(self)
-        window.title(f"{'Edit' if record_id else 'Add'} {table_name.title()[:-1]}")
+        window.title(f"{t('edit') if record_id else t('add')} {table_name.title()[:-1]}")
         window.geometry("400x300")
         
         entries = {}
@@ -824,7 +824,7 @@ class TimetableApp(tk.Tk):
             self.load_initial_data()  # Refresh main window data
             window.destroy()
         
-        ttk.Button(window, text="Save", command=save_record).pack(pady=10)
+        ttk.Button(window, text=t("save"), command=save_record).pack(pady=10)
 
     def delete_record(self, table_name, tree):
         """Delete selected record"""
@@ -852,17 +852,17 @@ class TimetableApp(tk.Tk):
             view_type = self.view_var.get()
             
             if not selected_item:
-                print("Please select an item to export")
+                print(t("please_select_item"))
                 return
             
             # Prepare data for PDF export
-            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+            days = [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday")]
             times = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00"]
             
             schedule_data = self.load_schedule_data(selected_item, view_type)
             
             # Create table data
-            table_data = [['Time'] + days]
+            table_data = [[t('time_slot')] + days]
             
             for r, time in enumerate(times):
                 row = [time]
@@ -880,7 +880,7 @@ class TimetableApp(tk.Tk):
             
             filename = f"{selected_item.replace(' ', '_')}_{view_type.lower()}_timetable.pdf"
             export_schedule_to_pdf(table_data, filename)
-            print(f"Exported to {filename}")
+            print(f"{t('pdf_exported')} {filename}")
             
         except Exception as e:
             print(f"Error exporting PDF: {e}")
@@ -896,7 +896,7 @@ class TimetableApp(tk.Tk):
             # Remove default sheet
             wb.remove(wb.active)
             
-            days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+            days = [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday")]
             times = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00"]
             
             # Create sheets for each class
@@ -909,7 +909,7 @@ class TimetableApp(tk.Tk):
                 ws = wb.create_sheet(title=class_name)
                 
                 # Headers
-                ws.cell(row=1, column=1, value="Time")
+                ws.cell(row=1, column=1, value=t("time_slot"))
                 for c, day in enumerate(days):
                     ws.cell(row=1, column=c + 2, value=day)
                 
@@ -953,17 +953,17 @@ class TimetableApp(tk.Tk):
             # Save file
             filename = "school_timetable.xlsx"
             wb.save(filename)
-            print(f"Exported all class schedules to {filename}")
+            print(f"{t('export_to_excel')} {filename}")
             
         except ImportError:
-            print("openpyxl not installed. Install with: pip install openpyxl")
+            print(t("openpyxl_not_installed"))
         except Exception as e:
             print(f"Error exporting Excel: {e}")
 
     def manage_teacher_preferences(self):
         """Open teacher preferences management window"""
         window = tk.Toplevel(self)
-        window.title("Teacher Preferences")
+        window.title(t("teacher_preferences"))
         window.geometry("800x600")
         
         # Main frame
@@ -975,7 +975,7 @@ class TimetableApp(tk.Tk):
                  font=('Helvetica', 12, 'bold')).pack(pady=10)
         
         # Create treeview
-        columns = ('Teacher', 'Class', 'Preference Score')
+        columns = (t('teacher'), t('class'), t('preference'))
         tree = ttk.Treeview(main_frame, columns=columns, show='headings', height=15)
         
         for col in columns:
@@ -1014,30 +1014,30 @@ class TimetableApp(tk.Tk):
         btn_frame = ttk.Frame(window)
         btn_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        ttk.Button(btn_frame, text="Add Preference", 
+        ttk.Button(btn_frame, text=t("add_preference"), 
                   command=lambda: self.add_teacher_preference(tree, refresh_preferences)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Edit Selected", 
+        ttk.Button(btn_frame, text=t("edit_selected"), 
                   command=lambda: self.edit_teacher_preference(tree, refresh_preferences)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Delete Selected", 
+        ttk.Button(btn_frame, text=t("delete_selected"), 
                   command=lambda: self.delete_teacher_preference(tree, refresh_preferences)).pack(side=tk.LEFT, padx=5)
 
     def add_teacher_preference(self, tree, refresh_callback):
         """Add new teacher preference"""
         window = tk.Toplevel(self)
-        window.title("Add Teacher Preference")
+        window.title(t("add_teacher_preference"))
         window.geometry("400x250")
         
-        ttk.Label(window, text="Teacher:").pack(pady=5)
+        ttk.Label(window, text=f"{t('teacher')}:").pack(pady=5)
         teacher_var = tk.StringVar()
         teacher_combo = ttk.Combobox(window, textvariable=teacher_var, state="readonly")
         teacher_combo.pack(pady=5)
         
-        ttk.Label(window, text="Class:").pack(pady=5)
+        ttk.Label(window, text=f"{t('class')}:").pack(pady=5)
         class_var = tk.StringVar()
         class_combo = ttk.Combobox(window, textvariable=class_var, state="readonly")
         class_combo.pack(pady=5)
         
-        ttk.Label(window, text="Preference Score (1-5):").pack(pady=5)
+        ttk.Label(window, text=f"{t('preference')} (1-5):").pack(pady=5)
         score_var = tk.StringVar(value="3")
         score_spin = ttk.Spinbox(window, from_=1, to=5, textvariable=score_var, width=10)
         score_spin.pack(pady=5)
@@ -1082,7 +1082,7 @@ class TimetableApp(tk.Tk):
             refresh_callback()
             window.destroy()
         
-        ttk.Button(window, text="Save", command=save_preference).pack(pady=20)
+        ttk.Button(window, text=t("save"), command=save_preference).pack(pady=20)
 
     def edit_teacher_preference(self, tree, refresh_callback):
         """Edit selected teacher preference"""
@@ -1095,13 +1095,13 @@ class TimetableApp(tk.Tk):
         values = item['values']
         
         window = tk.Toplevel(self)
-        window.title("Edit Teacher Preference")
+        window.title(t("edit_teacher_preference"))
         window.geometry("400x200")
         
-        ttk.Label(window, text=f"Teacher: {values[0]}").pack(pady=5)
-        ttk.Label(window, text=f"Class: {values[1]}").pack(pady=5)
+        ttk.Label(window, text=f"{t('teacher')}: {values[0]}").pack(pady=5)
+        ttk.Label(window, text=f"{t('class')}: {values[1]}").pack(pady=5)
         
-        ttk.Label(window, text="Preference Score (1-5):").pack(pady=5)
+        ttk.Label(window, text=f"{t('preference')} (1-5):").pack(pady=5)
         score_var = tk.StringVar(value=str(values[2]))
         score_spin = ttk.Spinbox(window, from_=1, to=5, textvariable=score_var, width=10)
         score_spin.pack(pady=5)
@@ -1117,7 +1117,7 @@ class TimetableApp(tk.Tk):
             refresh_callback()
             window.destroy()
         
-        ttk.Button(window, text="Save", command=save_preference).pack(pady=20)
+        ttk.Button(window, text=t("save"), command=save_preference).pack(pady=20)
 
     def delete_teacher_preference(self, tree, refresh_callback):
         """Delete selected teacher preference"""
@@ -1139,14 +1139,14 @@ class TimetableApp(tk.Tk):
     def manage_teacher_availability(self):
         """Open teacher availability management window"""
         window = tk.Toplevel(self)
-        window.title("Teacher Availability")
+        window.title(t("teacher_availability"))
         window.geometry("900x700")
         
         # Teacher selection
         top_frame = ttk.Frame(window)
         top_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Label(top_frame, text="Select Teacher:", font=('Helvetica', 12, 'bold')).pack(side=tk.LEFT, padx=10)
+        ttk.Label(top_frame, text=f"{t('select_teacher')}:", font=('Helvetica', 12, 'bold')).pack(side=tk.LEFT, padx=10)
         teacher_var = tk.StringVar()
         teacher_combo = ttk.Combobox(top_frame, textvariable=teacher_var, state="readonly", width=30)
         teacher_combo.pack(side=tk.LEFT, padx=10)
@@ -1164,7 +1164,7 @@ class TimetableApp(tk.Tk):
         grid_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Create availability grid
-        days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        days = [t("monday"), t("tuesday"), t("wednesday"), t("thursday"), t("friday")]
         times = ["08:00-09:00", "09:00-10:00", "10:00-11:00", "11:00-12:00", 
                 "12:00-13:00", "13:00-14:00", "14:00-15:00", "15:00-16:00"]
         
@@ -1180,7 +1180,7 @@ class TimetableApp(tk.Tk):
             for c, day in enumerate(days):
                 var = tk.BooleanVar(value=True)  # Default available
                 availability_vars[(c, r)] = var
-                cb = ttk.Checkbutton(grid_frame, variable=var, text="Available")
+                cb = ttk.Checkbutton(grid_frame, variable=var, text=t("available"))
                 cb.grid(row=r+1, column=c+1, padx=2, pady=2)
         
         def load_teacher_availability():
@@ -1234,20 +1234,20 @@ class TimetableApp(tk.Tk):
         btn_frame = ttk.Frame(window)
         btn_frame.pack(fill=tk.X, padx=10, pady=10)
         
-        ttk.Button(btn_frame, text="Save Availability ", command=save_teacher_availability).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Mark All Available", 
+        ttk.Button(btn_frame, text=t("save_availability"), command=save_teacher_availability).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=t("mark_all_available"), 
                   command=lambda: [var.set(True) for var in availability_vars.values()]).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Mark All Unavailable", 
+        ttk.Button(btn_frame, text=t("mark_all_unavailable"), 
                   command=lambda: [var.set(False) for var in availability_vars.values()]).pack(side=tk.LEFT, padx=5)
 
     def manage_lessons(self):
         """Enhanced lesson requirements management"""
         window = tk.Toplevel(self)
-        window.title("Lesson Requirements")
+        window.title(t("lesson_requirements"))
         window.geometry("800x600")
         
         # Create treeview
-        columns = ('Class', 'Subject', 'Lessons per Week')
+        columns = (t('class'), t('subject'), t('lessons_per_week'))
         tree = ttk.Treeview(window, columns=columns, show='headings', height=20)
         
         for col in columns:
@@ -1280,11 +1280,11 @@ class TimetableApp(tk.Tk):
         btn_frame = ttk.Frame(window)
         btn_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        ttk.Button(btn_frame, text="Add Requirement", 
+        ttk.Button(btn_frame, text=t("add_requirement"), 
                   command=lambda: self.add_lesson_requirement(tree, refresh_lessons)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Edit Selected", 
+        ttk.Button(btn_frame, text=t("edit_selected"), 
                   command=lambda: self.edit_lesson_requirement(tree, refresh_lessons)).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Delete Selected", 
+        ttk.Button(btn_frame, text=t("delete_selected"), 
                   command=lambda: self.delete_lesson_requirement(tree, refresh_lessons)).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Auto-Generate", 
                   command=lambda: self.auto_generate_lessons(refresh_lessons)).pack(side=tk.LEFT, padx=5)
@@ -1292,20 +1292,20 @@ class TimetableApp(tk.Tk):
     def add_lesson_requirement(self, tree, refresh_callback):
         """Add new lesson requirement"""
         window = tk.Toplevel(self)
-        window.title("Add Lesson Requirement")
+        window.title(t("add_lesson_requirement"))
         window.geometry("400x250")
         
-        ttk.Label(window, text="Class:").pack(pady=5)
+        ttk.Label(window, text=f"{t('class')}:").pack(pady=5)
         class_var = tk.StringVar()
         class_combo = ttk.Combobox(window, textvariable=class_var, state="readonly")
         class_combo.pack(pady=5)
         
-        ttk.Label(window, text="Subject:").pack(pady=5)
+        ttk.Label(window, text=f"{t('subject')}:").pack(pady=5)
         subject_var = tk.StringVar()
         subject_combo = ttk.Combobox(window, textvariable=subject_var, state="readonly")
         subject_combo.pack(pady=5)
         
-        ttk.Label(window, text="Lessons per Week:").pack(pady=5)
+        ttk.Label(window, text=f"{t('lessons_per_week')}:").pack(pady=5)
         lessons_var = tk.StringVar(value="3")
         lessons_spin = ttk.Spinbox(window, from_=1, to=10, textvariable=lessons_var, width=10)
         lessons_spin.pack(pady=5)
@@ -1350,7 +1350,7 @@ class TimetableApp(tk.Tk):
             refresh_callback()
             window.destroy()
         
-        ttk.Button(window, text="Save", command=save_requirement).pack(pady=20)
+        ttk.Button(window, text=t("save"), command=save_requirement).pack(pady=20)
 
     def edit_lesson_requirement(self, tree, refresh_callback):
         """Edit selected lesson requirement"""
@@ -1363,13 +1363,13 @@ class TimetableApp(tk.Tk):
         values = item['values']
         
         window = tk.Toplevel(self)
-        window.title("Edit Lesson Requirement")
+        window.title(t("edit_lesson_requirement"))
         window.geometry("400x200")
         
-        ttk.Label(window, text=f"Class: {values[0]}").pack(pady=5)
-        ttk.Label(window, text=f"Subject: {values[1]}").pack(pady=5)
+        ttk.Label(window, text=f"{t('class')}: {values[0]}").pack(pady=5)
+        ttk.Label(window, text=f"{t('subject')}: {values[1]}").pack(pady=5)
         
-        ttk.Label(window, text="Lessons per Week:").pack(pady=5)
+        ttk.Label(window, text=f"{t('lessons_per_week')}:").pack(pady=5)
         lessons_var = tk.StringVar(value=str(values[2]))
         lessons_spin = ttk.Spinbox(window, from_=1, to=10, textvariable=lessons_var, width=10)
         lessons_spin.pack(pady=5)
@@ -1385,7 +1385,7 @@ class TimetableApp(tk.Tk):
             refresh_callback()
             window.destroy()
         
-        ttk.Button(window, text="Save", command=save_requirement).pack(pady=20)
+        ttk.Button(window, text=t("save"), command=save_requirement).pack(pady=20)
 
     def delete_lesson_requirement(self, tree, refresh_callback):
         """Delete selected lesson requirement"""
@@ -1572,7 +1572,7 @@ class TimetableApp(tk.Tk):
     def show_database_stats(self):
         """Show database statistics"""
         window = tk.Toplevel(self)
-        window.title("Database Statistics")
+        window.title(t("database_statistics"))
         window.geometry("500x400")
         
         # Get statistics
@@ -1599,19 +1599,19 @@ class TimetableApp(tk.Tk):
         conn.close()
         
         # Display stats
-        ttk.Label(window, text="Database Statistics", font=('Helvetica', 14, 'bold')).pack(pady=20)
+        ttk.Label(window, text=t("database_statistics"), font=('Helvetica', 14, 'bold')).pack(pady=20)
         
         stats_text = f"""
-        Teachers: {stats['teachers']}
-        Classes: {stats['classes']}
-        Subjects: {stats['subjects']} ({lab_subjects} require labs)
-        Rooms: {stats['rooms']} ({lab_rooms} are labs)
+        {t('teachers')}: {stats['teachers']}
+        {t('classes')}: {stats['classes']}
+        {t('subjects')}: {stats['subjects']} ({lab_subjects} {t('require_labs')})
+        {t('rooms')}: {stats['rooms']} ({lab_rooms} {t('are_labs')})
         
-        Lesson Requirements: {stats['lessons']}
-        Total Lessons Needed: {total_lessons_needed}
-        Scheduled Lessons: {stats['schedules']}
+        {t('lesson_requirements')}: {stats['lessons']}
+        {t('total_lessons_needed')}: {total_lessons_needed}
+        {t('scheduled_lessons')}: {stats['schedules']}
         
-        Teacher Preferences: {stats['teacher_preferences']}
+        {t('teacher_preferences')}: {stats['teacher_preferences']}
         """
         
         ttk.Label(window, text=stats_text, justify=tk.LEFT, font=('Helvetica', 11)).pack(pady=20)
@@ -1619,7 +1619,7 @@ class TimetableApp(tk.Tk):
         # Utilization info
         if total_lessons_needed > 0:
             utilization = (stats['schedules'] / total_lessons_needed) * 100
-            ttk.Label(window, text=f"Schedule Completion: {utilization:.1f}%", 
+            ttk.Label(window, text=f"{t('utilization_percentage')}: {utilization:.1f}%", 
                      font=('Helvetica', 12, 'bold')).pack(pady=10)
 
     def clear_schedules(self):
