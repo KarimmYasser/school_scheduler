@@ -1,3 +1,9 @@
+---
+noteId: "955331209b3311f0b7744fd593916b62"
+tags: []
+
+---
+
 # 📁 School Scheduler Project Structure
 
 ## Current Project Organization
