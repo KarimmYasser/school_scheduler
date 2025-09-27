@@ -1,0 +1,40 @@
+# School Scheduler - Development Requirements
+# ==========================================
+# Additional packages for development, testing, and extended features
+
+# Include base requirements
+-r requirements-minimal.txt
+
+# Web interface development
+streamlit>=1.20.0
+flask>=2.3.0
+fastapi>=0.100.0
+uvicorn>=0.20.0
+
+# Data analysis and visualization
+pandas>=2.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+
+# Additional export formats
+xlsxwriter>=3.0.0
+
+# Utility libraries
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+pyyaml>=6.0.0
+python-docx>=0.8.11
+lxml>=4.9.0
+
+# Development and testing tools
+jupyter>=1.0.0
+notebook>=6.5.0
+ipython>=8.0.0
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Code quality tools
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.12.0

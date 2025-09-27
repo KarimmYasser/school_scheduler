@@ -46,17 +46,35 @@ A comprehensive school timetable scheduling application built with Python, featu
 ### Prerequisites
 
 - Python 3.8 or higher
-- Required packages (install via pip):
+- Required packages (install via pip)
+
+### Installation Options
+
+**Option 1: Minimal Installation (Core Functionality Only)**
+
+```bash
+pip install -r requirements-minimal.txt
+```
+
+**Option 2: Full Installation (Recommended)**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Optional Dependencies
+**Option 3: Development Installation (All Features + Dev Tools)**
 
-- **OR-Tools**: For advanced constraint satisfaction (recommended)
-- **reportlab**: For PDF export
-- **openpyxl**: For Excel export
+```bash
+pip install -r requirements-dev.txt
+```
+
+### Key Dependencies
+
+- **OR-Tools**: Google's constraint satisfaction solver (main scheduling engine)
+- **reportlab**: PDF generation for schedule exports
+- **openpyxl**: Excel file handling for import/export
+- **numpy**: Numerical computing for ML solver
+- **streamlit**: Web interface option (full installation)
 
 If OR-Tools is not available, the system will fall back to a simple greedy algorithm.
 
