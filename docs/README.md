@@ -1,6 +1,6 @@
 # School Timetable Generator
 
-![School Generator Cover](school_scheduler.png)
+![School Generator Cover](../school_scheduler.png)
 
 A comprehensive school timetable scheduling application built with Python, featuring automated schedule generation, manual editing capabilities, and export functionality.
 
